@@ -185,13 +185,81 @@
         flex-direction: column;
       }
 
-      iframe {
-        height: 40%;
+      .toggle-fullscreen-btn {
+        position: fixed;
+        z-index: 10000;
+        top: 10px;
+        right: 10px;
+        border: 0;
+        padding: 0;
+        background: none;
+        cursor: pointer;
+        outline: none;
+      }
+
+      .toggle-fullscreen-svg {
+        display: block;
+        height: auto;
+      }
+
+      .toggle-fullscreen-svg path {
+        transform-box: view-box;
+        transform-origin: 12px 12px;
+        fill: none;
+        stroke: hsl(225, 10%, 8%);
+        stroke-width: 4;
+        transition: 0.15s;
+      }
+
+      .toggle-fullscreen-btn:hover path:nth-child(1),
+      .toggle-fullscreen-btn:focus path:nth-child(1) {
+        transform: translate(-2px, -2px);
+      }
+
+      .toggle-fullscreen-btn:hover path:nth-child(2),
+      .toggle-fullscreen-btn:focus path:nth-child(2) {
+        transform: translate(2px, -2px);
+      }
+
+      .toggle-fullscreen-btn:hover path:nth-child(3),
+      .toggle-fullscreen-btn:focus path:nth-child(3) {
+        transform: translate(2px, 2px);
+      }
+
+      .toggle-fullscreen-btn:hover path:nth-child(4),
+      .toggle-fullscreen-btn:focus path:nth-child(4) {
+        transform: translate(-2px, 2px);
+      }
+
+      .toggle-fullscreen-btn:not(.on) .icon-fullscreen-leave {
+        display: none;
+      }
+
+      .toggle-fullscreen-btn.on .icon-fullscreen-enter {
+        display: none;
       }
     </style>
   </head>
 
   <body>
+    <button class="js-toggle-fullscreen-btn toggle-fullscreen-btn" aria-label="Enter fullscreen mode" hidden>
+      <svg class="toggle-fullscreen-svg" width="8" height="8" viewBox="-2 -2 28 28">
+        <g class="icon-fullscreen-enter">
+          <path d="M 2 9 v -7 h 7" />
+          <path d="M 22 9 v -7 h -7" />
+          <path d="M 22 15 v 7 h -7" />
+          <path d="M 2 15 v 7 h 7" />
+        </g>
+        
+        <g class="icon-fullscreen-leave">
+          <path d="M 24 17 h -7 v 7" />
+          <path d="M 0 17 h 7 v 7" />
+          <path d="M 0 7 h 7 v -7" />
+          <path d="M 24 7 h -7 v -7" />
+        </g>
+      </svg>
+    </button>
+
     <div class="clock">
       <div>
         <div class="info date"></div>
@@ -215,31 +283,31 @@
     <div id="Day-input">
       <div id="clock">8:10:45</div>
       <script>
-        (function(d, s, id) {
-            if (d.getElementById(id)) {
-                if (window.__TOMORROW__) {
-                    window.__TOMORROW__.renderWidget();
-                }
-                return;
+        (function (d, s, id) {
+          if (d.getElementById(id)) {
+            if (window.__TOMORROW__) {
+              window.__TOMORROW__.renderWidget();
             }
-            const fjs = d.getElementsByTagName(s)[0];
-            const js = d.createElement(s);
-            js.id = id;
-            js.src = "https://www.tomorrow.io/v1/widget/sdk/sdk.bundle.min.js";
+            return;
+          }
+          const fjs = d.getElementsByTagName(s)[0];
+          const js = d.createElement(s);
+          js.id = id;
+          js.src = "https://www.tomorrow.io/v1/widget/sdk/sdk.bundle.min.js";
 
-            fjs.parentNode.insertBefore(js, fjs);
-        })(document, 'script', 'tomorrow-sdk');
-        </script>
+          fjs.parentNode.insertBefore(js, fjs);
+        })(document, "script", "tomorrow-sdk");
+      </script>
 
-        <div class="tomorrow"
-           data-location-id="133210"
-           data-language="EN"
-           data-unit-system="METRIC"
-           data-skin="light"
-           data-widget-type="aqiMini"
-           style="padding-bottom:22px;position:relative;"
-        >
-        </div>
+      <div
+        class="tomorrow"
+        data-location-id="133210"
+        data-language="EN"
+        data-unit-system="METRIC"
+        data-skin="light"
+        data-widget-type="aqiMini"
+        style="padding-bottom: 22px; position: relative"
+      ></div>
     </div>
     <script>
       var dialLines = document.getElementsByClassName("diallines");
@@ -328,27 +396,45 @@
 
       setInterval("clock()", 100);
 
-      document.querySelector("iframe").onload = function () {
-        try {
-          var iframe = document.querySelector("iframe");
-          var iframeDocument =
-            iframe.contentDocument || iframe.contentWindow.document;
-          var weeklyForecast = iframeDocument.querySelector(".weekly-forecast");
+      if (document.fullscreenEnabled || document.webkitFullscreenEnabled) {
+        const toggleBtn = document.querySelector(".js-toggle-fullscreen-btn");
 
-          if (weeklyForecast) {
-            weeklyForecast.style.display = "none";
+        const styleEl = document.createElement("link");
+        styleEl.setAttribute("rel", "stylesheet");
+        styleEl.setAttribute(
+          "href",
+          "https://codepen.io/tiggr/pen/poJoLyW.css"
+        );
+        styleEl.addEventListener("load", function () {
+          toggleBtn.hidden = false;
+        });
+        document.head.appendChild(styleEl);
+
+        toggleBtn.addEventListener("click", function () {
+          if (document.fullscreen) {
+            document.exitFullscreen();
+          } else if (document.webkitFullscreenElement) {
+            document.webkitCancelFullScreen();
+          } else if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen();
           } else {
-            console.log(
-              "The .weekly-forecast element was not found in the iframe."
-            );
+            document.documentElement.webkitRequestFullScreen();
           }
-        } catch (error) {
-          console.error(
-            "Could not access the iframe's content. Make sure it is on the same origin.",
-            error
-          );
+        });
+
+        document.addEventListener("fullscreenchange", handleFullscreen);
+        document.addEventListener("webkitfullscreenchange", handleFullscreen);
+
+        function handleFullscreen() {
+          if (document.fullscreen || document.webkitFullscreenElement) {
+            toggleBtn.classList.add("on");
+            toggleBtn.setAttribute("aria-label", "Exit fullscreen mode");
+          } else {
+            toggleBtn.classList.remove("on");
+            toggleBtn.setAttribute("aria-label", "Enter fullscreen mode");
+          }
         }
-      };
+      }
     </script>
   </body>
 </html>
